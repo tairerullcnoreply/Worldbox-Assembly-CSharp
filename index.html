@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Directory Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #0f0f0f;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #f0f0f0;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      padding: 2rem;
+      text-align: center;
+      background: linear-gradient(135deg, #111, #1e1e1e);
+      border-bottom: 2px solid #444;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      margin: 0;
+      color: #00ffcc;
+      text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffaa;
+    }
+
+    main {
+      padding: 2rem;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      margin: 0.5rem 0;
+    }
+
+    a {
+      display: block;
+      padding: 1rem;
+      border-radius: 12px;
+      text-decoration: none;
+      background: #1e1e1e;
+      color: #f0f0f0;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+    }
+
+    a:hover {
+      background: #00ffcc;
+      color: #0f0f0f;
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 20px rgba(0, 255, 204, 0.8);
+    }
+
+    a.folder::before {
+      content: "📂 ";
+    }
+
+    a.file::before {
+      content: "📄 ";
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💼 Boss Directory Explorer</h1>
+  </header>
+  <main>
+    <ul id="file-list"></ul>
+  </main>
+  <footer>
+    Powered by <strong>Boss Mode</strong>
+  </footer>
+
+  <script>
+    async function fetchDirectory() {
+      try {
+        // Fetch current directory listing (relies on server autoindex or backend support)
+        const response = await fetch(window.location.href);
+        const text = await response.text();
+
+        // Parse response as HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+
+        // Extract links from directory index
+        const links = [...doc.querySelectorAll('a')];
+        const fileList = document.getElementById('file-list');
+
+        links.forEach(link => {
+          const href = link.getAttribute('href');
+          if (!href || href.startsWith('?') || href.startsWith('#') || href === '../') return;
+
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = href;
+          a.textContent = href;
+
+          if (href.endsWith('/')) {
+            a.classList.add('folder');
+          } else {
+            a.classList.add('file');
+          }
+
+          li.appendChild(a);
+          fileList.appendChild(li);
+        });
+      } catch (err) {
+        console.error('Error fetching directory:', err);
+      }
+    }
+
+    fetchDirectory();
+  </script>
+</body>
+</html>
