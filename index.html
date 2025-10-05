@@ -90,41 +90,36 @@
   <script>
     async function fetchDirectory() {
       try {
-        // Fetch current directory listing (relies on server autoindex or backend support)
-        const response = await fetch(window.location.href);
-        const text = await response.text();
-
-        // Parse response as HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
-
-        // Extract links from directory index
-        const links = [...doc.querySelectorAll('a')];
-        const fileList = document.getElementById('file-list');
-
-        links.forEach(link => {
-          const href = link.getAttribute('href');
-          if (!href || href.startsWith('?') || href.startsWith('#') || href === '../') return;
-
-          const li = document.createElement('li');
-          const a = document.createElement('a');
-          a.href = href;
-          a.textContent = href;
-
-          if (href.endsWith('/')) {
-            a.classList.add('folder');
-          } else {
-            a.classList.add('file');
-          }
-
-          li.appendChild(a);
-          fileList.appendChild(li);
-        });
+        const response = await fetch("/api/files");
+        const data = await response.json();
+    
+        const fileList = document.getElementById("file-list");
+    
+        if (Array.isArray(data) && data.length > 0) {
+          data.forEach(item => {
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = item.download_url || item.html_url;
+            a.textContent = item.name;
+    
+            if (item.type === "dir") {
+              a.classList.add("folder");
+            } else {
+              a.classList.add("file");
+            }
+    
+            li.appendChild(a);
+            fileList.appendChild(li);
+          });
+        } else {
+          fileList.innerHTML = "<li>No files found</li>";
+        }
       } catch (err) {
-        console.error('Error fetching directory:', err);
+        console.error("Error fetching files:", err);
+        document.getElementById("file-list").innerHTML = "<li>Error loading files</li>";
       }
     }
-
+    
     fetchDirectory();
   </script>
 </body>
