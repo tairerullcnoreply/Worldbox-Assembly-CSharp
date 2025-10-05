@@ -12,35 +12,29 @@
       margin: 0;
       padding: 0;
     }
-
     header {
       padding: 2rem;
       text-align: center;
       background: linear-gradient(135deg, #111, #1e1e1e);
       border-bottom: 2px solid #444;
     }
-
     header h1 {
       font-size: 2rem;
       margin: 0;
       color: #00ffcc;
       text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffaa;
     }
-
     main {
       padding: 2rem;
     }
-
     ul {
       list-style: none;
       margin: 0;
       padding: 0;
     }
-
     li {
       margin: 0.5rem 0;
     }
-
     a {
       display: block;
       padding: 1rem;
@@ -51,22 +45,18 @@
       transition: all 0.2s ease-in-out;
       box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
     }
-
     a:hover {
       background: #00ffcc;
       color: #0f0f0f;
       transform: translateY(-2px) scale(1.02);
       box-shadow: 0 0 20px rgba(0, 255, 204, 0.8);
     }
-
     a.folder::before {
       content: "📂 ";
     }
-
     a.file::before {
       content: "📄 ";
     }
-
     footer {
       margin-top: 3rem;
       padding: 1rem;
@@ -92,22 +82,23 @@
       try {
         const response = await fetch("/api/files");
         const data = await response.json();
-    
+
         const fileList = document.getElementById("file-list");
-    
+        fileList.innerHTML = "";
+
         if (Array.isArray(data) && data.length > 0) {
           data.forEach(item => {
             const li = document.createElement("li");
             const a = document.createElement("a");
             a.href = item.download_url || item.html_url;
             a.textContent = item.name;
-    
+
             if (item.type === "dir") {
               a.classList.add("folder");
             } else {
               a.classList.add("file");
             }
-    
+
             li.appendChild(a);
             fileList.appendChild(li);
           });
@@ -119,7 +110,7 @@
         document.getElementById("file-list").innerHTML = "<li>Error loading files</li>";
       }
     }
-    
+
     fetchDirectory();
   </script>
 </body>
