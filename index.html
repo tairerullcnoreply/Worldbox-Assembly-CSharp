@@ -5,113 +5,551 @@
   <title>Worldbox Assembly-CSharp.dll</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      background: #0f0f0f;
+    :root {
+      color-scheme: dark;
+      --background: #0f0f0f;
+      --panel: #1b1b1b;
+      --panel-alt: #171717;
+      --accent: #00ffcc;
+      --accent-soft: rgba(0, 255, 204, 0.16);
+      --text-primary: #f5f5f5;
+      --text-secondary: #b4b4b4;
+      --danger: #ff7675;
+      --border: #2d2d2d;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #f0f0f0;
-      margin: 0;
-      padding: 0;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, rgba(0, 255, 204, 0.08), transparent 55%),
+                  radial-gradient(circle at bottom right, rgba(0, 170, 255, 0.08), transparent 60%),
+                  var(--background);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+    }
+
     header {
-      padding: 2rem;
+      padding: 2.5rem 2rem 1.5rem;
       text-align: center;
       background: linear-gradient(135deg, #111, #1e1e1e);
-      border-bottom: 2px solid #444;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
     }
+
     header h1 {
-      font-size: 2rem;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      margin: 0 0 0.6rem;
+      color: var(--accent);
+      text-shadow: 0 0 14px rgba(0, 255, 204, 0.6);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    header p {
       margin: 0;
-      color: #00ffcc;
-      text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffaa;
+      color: var(--text-secondary);
+      font-size: 1rem;
     }
+
     main {
-      padding: 2rem;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+      gap: 2rem;
+      padding: 2.5rem clamp(1.25rem, 4vw, 3rem) 3rem;
     }
-    ul {
+
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+      padding: clamp(1.25rem, 3vw, 1.75rem);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    #status-message {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      min-height: 1.2em;
+    }
+
+    #breadcrumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      font-size: 0.95rem;
+    }
+
+    #breadcrumbs button {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      border-radius: 6px;
+      transition: background 0.15s ease-in-out;
+      font-size: 0.95rem;
+    }
+
+    #breadcrumbs button:hover {
+      background: var(--accent-soft);
+    }
+
+    #file-list {
       list-style: none;
       margin: 0;
       padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
     }
-    li {
-      margin: 0.5rem 0;
+
+    #file-list li {
+      margin: 0;
     }
-    a {
-      display: block;
-      padding: 1rem;
+
+    #file-list a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.85rem 1rem;
       border-radius: 12px;
       text-decoration: none;
-      background: #1e1e1e;
-      color: #f0f0f0;
-      transition: all 0.2s ease-in-out;
-      box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+      background: var(--panel-alt);
+      color: inherit;
+      border: 1px solid rgba(0, 255, 204, 0.06);
+      transition: transform 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
+      position: relative;
     }
-    a:hover {
-      background: #00ffcc;
-      color: #0f0f0f;
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 0 20px rgba(0, 255, 204, 0.8);
+
+    #file-list a::before {
+      font-size: 1.1rem;
     }
-    a.folder::before {
-      content: "📂 ";
+
+    #file-list a.folder::before {
+      content: "📂";
     }
-    a.file::before {
-      content: "📄 ";
+
+    #file-list a.file::before {
+      content: "📄";
     }
-    footer {
-      margin-top: 3rem;
+
+    #file-list a:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0, 255, 204, 0.45);
+      box-shadow: 0 18px 32px rgba(0, 255, 204, 0.15);
+    }
+
+    .file-size {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .file-viewer {
+      background: var(--panel);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+    }
+
+    .file-viewer header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(0, 255, 204, 0.08), transparent 70%);
+      text-align: left;
+    }
+
+    .file-viewer header h2 {
+      margin: 0 0 0.3rem;
+      font-size: 1.2rem;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+    }
+
+    .file-viewer header p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    #file-content {
+      font-family: "Fira Code", "JetBrains Mono", "Consolas", "Courier New", monospace;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      flex: 1;
+      padding: 1.5rem;
+      background: #101010;
+      margin: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    #file-content.empty {
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    .file-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: var(--panel-alt);
+    }
+
+    .file-actions a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .file-actions span {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .guide {
+      background: var(--panel);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: clamp(1.25rem, 3vw, 1.75rem);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+      margin-top: 2rem;
+    }
+
+    .guide h2 {
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 1.15rem;
+      letter-spacing: 0.06em;
+    }
+
+    .guide p,
+    .guide li {
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .guide code {
+      background: rgba(0, 255, 204, 0.12);
+      border-radius: 6px;
+      padding: 0.2rem 0.4rem;
+      font-family: "Fira Code", "JetBrains Mono", "Consolas", "Courier New", monospace;
+      color: var(--accent);
+    }
+
+    .guide pre {
+      margin: 1rem 0 0;
       padding: 1rem;
+      background: var(--panel-alt);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 255, 204, 0.12);
+      overflow-x: auto;
+      color: var(--accent);
+      font-size: 0.95rem;
+    }
+
+    footer {
+      padding: 1.5rem;
       text-align: center;
       font-size: 0.9rem;
-      color: #777;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.6);
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Worldbox Assembly-CSharp.dll</h1>
+    <p>Browse the repository, preview files, and retrieve raw content programmatically.</p>
   </header>
   <main>
-    <ul id="file-list"></ul>
+    <section class="panel">
+      <div>
+        <h2>Repository Navigator</h2>
+        <p id="status-message"></p>
+      </div>
+      <nav id="breadcrumbs"></nav>
+      <ul id="file-list"></ul>
+    </section>
+    <section class="file-viewer" aria-live="polite">
+      <header>
+        <h2 id="file-name">Select a file</h2>
+        <p id="file-meta">Choose a file from the navigator to preview its contents.</p>
+      </header>
+      <pre id="file-content" class="empty">No file selected yet.</pre>
+      <div class="file-actions">
+        <a id="raw-link" href="#" rel="nofollow noopener" target="_blank">Raw download</a>
+        <span id="file-encoding">Encoding: —</span>
+      </div>
+    </section>
   </main>
+
+  <section class="guide">
+    <h2>Remote Retrieval Guide</h2>
+    <p>Use the JSON API to integrate this repository into your tools or to power web scrapers. The service intentionally exposes predictable formats so automated consumers can avoid malformed payloads.</p>
+    <ol>
+      <li>Send a <code>GET</code> request to <code>/api/files</code> with an optional <code>path</code> query to drill into folders.</li>
+      <li>Append <code>&amp;format=raw</code> to download the file bytes directly. Text files are served as UTF-8, binaries as <code>application/octet-stream</code>.</li>
+      <li>Always include an <code>Accept: application/json</code> header when requesting directory metadata for consistent scraping.</li>
+    </ol>
+    <pre><code id="guide-endpoint">curl "<span data-role="origin"></span>/api/files?path=AssemblyInfo.cs" -H "Accept: application/json"</code></pre>
+  </section>
+
   <footer>
     Powered by <strong>Uniplex</strong>
   </footer>
 
   <script>
-    async function fetchDirectory() {
-      try {
-        const response = await fetch("/api/files");
-        const data = await response.json();
+    const fileList = document.getElementById("file-list");
+    const statusMessage = document.getElementById("status-message");
+    const breadcrumbs = document.getElementById("breadcrumbs");
+    const fileNameEl = document.getElementById("file-name");
+    const fileMetaEl = document.getElementById("file-meta");
+    const fileContentEl = document.getElementById("file-content");
+    const fileEncodingEl = document.getElementById("file-encoding");
+    const rawLinkEl = document.getElementById("raw-link");
+    const guideEndpoint = document.querySelector("#guide-endpoint span[data-role='origin']");
 
-        const fileList = document.getElementById("file-list");
-        fileList.innerHTML = "";
+    let currentDirectory = "";
 
-        if (Array.isArray(data) && data.length > 0) {
-          data.forEach(item => {
-            const li = document.createElement("li");
-            const a = document.createElement("a");
-            a.href = item.download_url || item.html_url;
-            a.textContent = item.name;
-
-            if (item.type === "dir") {
-              a.classList.add("folder");
-            } else {
-              a.classList.add("file");
-            }
-
-            li.appendChild(a);
-            fileList.appendChild(li);
-          });
-        } else {
-          fileList.innerHTML = "<li>No files found</li>";
-        }
-      } catch (err) {
-        console.error("Error fetching files:", err);
-        document.getElementById("file-list").innerHTML = "<li>Error loading files</li>";
+    function updateGuideOrigin() {
+      if (guideEndpoint) {
+        guideEndpoint.textContent = window.location.origin;
       }
     }
 
-    fetchDirectory();
+    function formatSize(size) {
+      if (typeof size !== "number" || Number.isNaN(size)) return "";
+      if (size < 1024) return `${size} B`;
+      const units = ["KB", "MB", "GB", "TB"];
+      let value = size / 1024;
+      let unitIndex = 0;
+      while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+      }
+      return `${value.toFixed(1)} ${units[unitIndex]}`;
+    }
+
+    function setStatus(message, isError = false) {
+      statusMessage.textContent = message;
+      statusMessage.style.color = isError ? "var(--danger)" : "var(--text-secondary)";
+    }
+
+    function clearFilePreview() {
+      fileNameEl.textContent = "Select a file";
+      fileMetaEl.textContent = "Choose a file from the navigator to preview its contents.";
+      fileContentEl.textContent = "No file selected yet.";
+      fileContentEl.classList.add("empty");
+      fileEncodingEl.textContent = "Encoding: —";
+      rawLinkEl.setAttribute("href", "#");
+      rawLinkEl.setAttribute("aria-disabled", "true");
+    }
+
+    function updateBreadcrumbs(pathValue) {
+      breadcrumbs.innerHTML = "";
+      const segments = pathValue ? pathValue.split("/") : [];
+      const homeButton = document.createElement("button");
+      homeButton.textContent = "/";
+      homeButton.addEventListener("click", () => loadDirectory(""));
+      breadcrumbs.appendChild(homeButton);
+
+      let cumulative = "";
+      segments.forEach((segment, index) => {
+        cumulative = cumulative ? `${cumulative}/${segment}` : segment;
+        const separator = document.createTextNode("/");
+        breadcrumbs.appendChild(separator);
+        const button = document.createElement("button");
+        button.textContent = segment;
+        button.addEventListener("click", () => loadDirectory(cumulative));
+        breadcrumbs.appendChild(button);
+      });
+    }
+
+    function renderDirectory(data) {
+      currentDirectory = data.path || "";
+      updateBreadcrumbs(currentDirectory);
+      clearFilePreview();
+
+      fileList.innerHTML = "";
+
+      if (data.parent) {
+        const upItem = document.createElement("li");
+        const upLink = document.createElement("a");
+        upLink.href = `#${encodeURIComponent(data.parent)}`;
+        upLink.classList.add("folder");
+        upLink.dataset.type = "directory";
+        upLink.dataset.path = data.parent;
+        upLink.textContent = "..";
+        upItem.appendChild(upLink);
+        fileList.appendChild(upItem);
+      }
+
+      if (!data.entries || data.entries.length === 0) {
+        const emptyMessage = document.createElement("li");
+        emptyMessage.textContent = "This directory is empty.";
+        fileList.appendChild(emptyMessage);
+        return;
+      }
+
+      data.entries.forEach(entry => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = `#${encodeURIComponent(entry.path)}`;
+        link.dataset.type = entry.type;
+        link.dataset.path = entry.path;
+        link.classList.add(entry.type === "directory" ? "folder" : "file");
+        link.textContent = entry.name;
+
+        if (typeof entry.size === "number") {
+          const sizeSpan = document.createElement("span");
+          sizeSpan.classList.add("file-size");
+          sizeSpan.textContent = formatSize(entry.size);
+          link.appendChild(sizeSpan);
+        }
+
+        li.appendChild(link);
+        fileList.appendChild(li);
+      });
+    }
+
+    function renderFile(data) {
+      fileNameEl.textContent = data.name;
+      const sizeText = typeof data.size === "number" ? ` • ${formatSize(data.size)}` : "";
+      fileMetaEl.textContent = `${data.path || data.name}${sizeText}`;
+      fileEncodingEl.textContent = `Encoding: ${data.encoding}`;
+      rawLinkEl.setAttribute("href", data.rawUrl || "#");
+      rawLinkEl.removeAttribute("aria-disabled");
+
+      if (data.preview) {
+        fileContentEl.textContent = data.preview;
+        fileContentEl.classList.remove("empty");
+      } else {
+        fileContentEl.textContent = "Binary file preview is not available. Use the raw download link.";
+        fileContentEl.classList.add("empty");
+      }
+
+      if (data.truncated) {
+        fileMetaEl.textContent += " (preview truncated)";
+      }
+    }
+
+    async function loadDirectory(pathValue = "") {
+      setStatus("Loading directory...");
+      try {
+        const response = await fetch(`/api/files?path=${encodeURIComponent(pathValue)}`, {
+          headers: { Accept: "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Directory request failed (${response.status})`);
+        }
+
+        const data = await response.json();
+
+        if (data.type !== "directory") {
+          throw new Error("Expected a directory payload");
+        }
+
+        renderDirectory(data);
+        const hash = pathValue ? `#${encodeURIComponent(pathValue)}` : window.location.pathname;
+        history.replaceState(null, "", hash);
+        setStatus("Directory loaded successfully.");
+      } catch (error) {
+        console.error(error);
+        fileList.innerHTML = "<li>Unable to load directory.</li>";
+        setStatus(error.message, true);
+      }
+    }
+
+    async function loadFile(pathValue) {
+      setStatus(`Loading file: ${pathValue}`);
+      try {
+        const response = await fetch(`/api/files?path=${encodeURIComponent(pathValue)}`, {
+          headers: { Accept: "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`File request failed (${response.status})`);
+        }
+
+        const data = await response.json();
+
+        if (data.type !== "file") {
+          throw new Error("Expected a file payload");
+        }
+
+        renderFile(data);
+        setStatus("File loaded successfully.");
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message, true);
+      }
+    }
+
+    fileList.addEventListener("click", event => {
+      const target = event.target.closest("a[data-type]");
+      if (!target) {
+        return;
+      }
+      event.preventDefault();
+      const pathValue = target.dataset.path || "";
+      if (target.dataset.type === "directory") {
+        loadDirectory(pathValue);
+      } else {
+        loadFile(pathValue);
+      }
+    });
+
+    window.addEventListener("hashchange", () => {
+      const pathValue = decodeURIComponent(window.location.hash.slice(1));
+      loadDirectory(pathValue);
+    });
+
+    function initialise() {
+      updateGuideOrigin();
+      const initialPath = decodeURIComponent(window.location.hash.slice(1));
+      loadDirectory(initialPath || "");
+    }
+
+    initialise();
   </script>
 </body>
 </html>
