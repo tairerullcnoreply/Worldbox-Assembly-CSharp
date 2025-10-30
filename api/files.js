@@ -52,14 +52,25 @@ function normalisePath(requestedPath = "") {
 function resolvePath(requestedPath = "") {
   const normalised = normalisePath(requestedPath);
   const resolved = path.resolve(ROOT_DIR, normalised);
+  const relative = path.relative(ROOT_DIR, resolved);
 
-  if (!resolved.startsWith(ROOT_DIR)) {
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
     const error = new Error("Path is outside of the project directory");
     error.statusCode = 400;
     throw error;
   }
 
   return { resolved, normalised };
+}
+
+function decodeRequestedPath(rawPath) {
+  try {
+    return decodeURIComponent(rawPath);
+  } catch (decodeError) {
+    const error = new Error("Invalid path encoding");
+    error.statusCode = 400;
+    throw error;
+  }
 }
 
 async function describeEntry(dirent, basePath, directoryPath) {
@@ -98,7 +109,8 @@ export default async function handler(req, res) {
     const decodedPath = Array.isArray(requestedPath) ? requestedPath.join("/") : requestedPath;
     const decodedFormat = Array.isArray(format) ? format[0] : format;
 
-    const { resolved, normalised } = resolvePath(decodeURIComponent(decodedPath));
+    const decoded = decodeRequestedPath(decodedPath);
+    const { resolved, normalised } = resolvePath(decoded);
     const stats = await fs.stat(resolved);
 
     res.setHeader("Cache-Control", "no-store");
