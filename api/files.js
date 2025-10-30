@@ -1,7 +1,45 @@
 import path from "path";
-import { promises as fs } from "fs";
+import { promises as fs, existsSync } from "fs";
+import { fileURLToPath } from "url";
 
-const ROOT_DIR = process.cwd();
+const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
+
+function directoryContainsSentinel(dir) {
+  if (!dir) {
+    return false;
+  }
+
+  const sentinels = ["Assembly-CSharp.sln", "index.html"];
+  return sentinels.some(fileName => existsSync(path.join(dir, fileName)));
+}
+
+function resolveRootDirectory() {
+  const explicitRoot = process.env.REPO_ROOT && path.resolve(process.env.REPO_ROOT);
+  if (explicitRoot && directoryContainsSentinel(explicitRoot)) {
+    return explicitRoot;
+  }
+
+  const candidates = [process.cwd(), path.resolve(moduleDirectory, "..")];
+  for (const candidate of candidates) {
+    if (directoryContainsSentinel(candidate)) {
+      return candidate;
+    }
+  }
+
+  let current = moduleDirectory;
+  while (true) {
+    if (directoryContainsSentinel(current)) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (!parent || parent === current) {
+      return current;
+    }
+    current = parent;
+  }
+}
+
+const ROOT_DIR = resolveRootDirectory();
 const PREVIEW_LIMIT = 8000;
 const HIDDEN_TOP_LEVEL = new Set(["api", "__vc"]);
 
