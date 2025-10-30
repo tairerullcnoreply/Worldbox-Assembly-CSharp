@@ -1,50 +1,134 @@
-import fetch from "node-fetch";
+import path from "path";
+import { promises as fs } from "fs";
 
-export default async function handler(req, res) {
-  const githubApiKey = process.env.VERCEL_GITHUB_API_KEY;
-  const owner = process.env.VERCEL_GITHUB_REPO_OWNER;
-  const repo = process.env.VERCEL_GITHUB_REPO;
-  const branch = process.env.VERCEL_GITHUB_REPO_BRANCH || "main";
-  const path = "";
+const ROOT_DIR = process.cwd();
+const PREVIEW_LIMIT = 8000;
 
-  if (!githubApiKey || !owner || !repo) {
-    console.error("Missing environment variables");
-    return res.status(500).json({ error: "Missing environment variables" });
+function normalisePath(requestedPath = "") {
+  const sanitised = requestedPath.replace(/\\/g, "/");
+  const normalised = path.posix.normalize(sanitised).replace(/^\.(\/|$)/, "");
+  return normalised === "." ? "" : normalised;
+}
+
+function resolvePath(requestedPath = "") {
+  const normalised = normalisePath(requestedPath);
+  const resolved = path.resolve(ROOT_DIR, normalised);
+
+  if (!resolved.startsWith(ROOT_DIR)) {
+    const error = new Error("Path is outside of the project directory");
+    error.statusCode = 400;
+    throw error;
   }
 
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
-  console.log("Fetching GitHub URL:", url);
+  return { resolved, normalised };
+}
+
+async function describeEntry(dirent, basePath, directoryPath) {
+  const joined = basePath ? path.posix.join(basePath, dirent.name) : dirent.name;
+  const entry = {
+    name: dirent.name,
+    path: joined,
+    type: dirent.isDirectory() ? "directory" : "file",
+  };
+
+  if (!dirent.isDirectory()) {
+    try {
+      const fileStats = await fs.stat(path.join(directoryPath, dirent.name));
+      entry.size = fileStats.size;
+    } catch (error) {
+      console.warn(`Unable to stat file ${dirent.name}`, error);
+    }
+  }
+
+  return entry;
+}
+
+function isLikelyText(buffer) {
+  const sample = buffer.subarray(0, Math.min(buffer.length, 8000));
+  return !sample.includes(0);
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `token ${githubApiKey}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
+    const { path: requestedPath = "", format = "json" } = req.query ?? {};
+    const decodedPath = Array.isArray(requestedPath) ? requestedPath.join("/") : requestedPath;
+    const decodedFormat = Array.isArray(format) ? format[0] : format;
 
-    const contentType = response.headers.get("content-type");
+    const { resolved, normalised } = resolvePath(decodeURIComponent(decodedPath));
+    const stats = await fs.stat(resolved);
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("GitHub API error:", text);
-      return res.status(response.status).json({ error: "Failed to fetch from GitHub", details: text });
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
+    if (stats.isDirectory()) {
+      const entries = await fs.readdir(resolved, { withFileTypes: true });
+      const visibleEntriesPromises = entries
+        .filter(entry => !entry.name.startsWith("."))
+        .map(entry => describeEntry(entry, normalised, resolved));
+      const visibleEntries = await Promise.all(visibleEntriesPromises);
+
+      const parent = normalised ? path.posix.dirname(normalised) : null;
+      const safeParent = parent === "." ? "" : parent;
+
+      const directoryPayload = {
+        type: "directory",
+        path: normalised,
+        parent: normalised ? safeParent : null,
+        entries: visibleEntries.sort((a, b) => {
+          if (a.type === b.type) {
+            return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+          }
+          return a.type === "directory" ? -1 : 1;
+        }),
+      };
+
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      return res.status(200).json(directoryPayload);
     }
 
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      console.error("Unexpected response type:", contentType, text);
-      return res.status(500).json({ error: "Invalid response from GitHub", details: text });
+    if (decodedFormat === "raw") {
+      const buffer = await fs.readFile(resolved);
+      const binary = !isLikelyText(buffer);
+      res.setHeader("Content-Type", binary ? "application/octet-stream" : "text/plain; charset=utf-8");
+      return res.status(200).send(buffer);
     }
 
-    const data = await response.json();
+    const fileBuffer = await fs.readFile(resolved);
+    const textFriendly = isLikelyText(fileBuffer);
+    let preview = null;
+    let truncated = false;
 
-    const ignoreFiles = ["index.html", "api"];
-    const filteredData = data.filter(item => !ignoreFiles.includes(item.name));
+    if (textFriendly) {
+      preview = fileBuffer.toString("utf8");
+      if (preview.length > PREVIEW_LIMIT) {
+        preview = `${preview.slice(0, PREVIEW_LIMIT)}\n…\n[preview truncated at ${PREVIEW_LIMIT} characters]`;
+        truncated = true;
+      }
+    }
 
-    res.status(200).json(filteredData);
+    const filePayload = {
+      type: "file",
+      path: normalised,
+      name: path.basename(normalised),
+      size: stats.size,
+      encoding: textFriendly ? "utf-8" : "binary",
+      preview,
+      truncated,
+      rawUrl: `/api/files?path=${encodeURIComponent(normalised)}&format=raw`,
+    };
+
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    return res.status(200).json(filePayload);
   } catch (error) {
-    console.error("Server error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("API error while reading files", error);
+    const statusCode = error.statusCode ?? (error.code === "ENOENT" ? 404 : 500);
+    const message = statusCode === 404 ? "Path not found" : error.message || "Unexpected error";
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    return res.status(statusCode).json({ error: message });
   }
 }
