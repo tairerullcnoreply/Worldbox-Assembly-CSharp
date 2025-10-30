@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 
 const ROOT_DIR = process.cwd();
 const PREVIEW_LIMIT = 8000;
+const HIDDEN_TOP_LEVEL = new Set(["api", "__vc"]);
 
 function normalisePath(requestedPath = "") {
   const sanitised = requestedPath.replace(/\\/g, "/");
@@ -69,6 +70,7 @@ export default async function handler(req, res) {
       const entries = await fs.readdir(resolved, { withFileTypes: true });
       const visibleEntriesPromises = entries
         .filter(entry => !entry.name.startsWith("."))
+        .filter(entry => normalised !== "" || !HIDDEN_TOP_LEVEL.has(entry.name))
         .map(entry => describeEntry(entry, normalised, resolved));
       const visibleEntries = await Promise.all(visibleEntriesPromises);
 
